@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MeshGradientSVG — Componente shadcn/ui</title>
+<style>
+  :root{
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-2: #f4f4f4;
+    --line: #1a1a1a;
+    --text: #000000;
+    --muted: #333333;
+    --accent: #000000;
+    --accent-dim: #000000;
+    --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--sans); }
+  body{
+    background-image:
+      radial-gradient(circle at 1px 1px, #d8d8d8 1px, transparent 0);
+    background-size: 28px 28px;
+  }
+  .wrap{ max-width: 880px; margin: 0 auto; padding: 56px 24px 100px; }
+
+  header{ margin-bottom: 40px; }
+  .eyebrow{
+    font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); display:flex; align-items:center; gap:8px; margin-bottom: 14px;
+  }
+  .eyebrow::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:none; }
+  h1{ font-size: 34px; line-height:1.15; margin:0 0 10px; letter-spacing:-0.02em; }
+  h1 code{ font-family: var(--mono); color: var(--accent); font-size: .85em; font-weight:500; }
+  .sub{ color: #1a1a1a; font-size: 15px; max-width: 60ch; margin:0; font-weight:500; }
+  .tags{ display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
+  .tag{
+    font-family: var(--mono); font-size: 11px; color: var(--muted); border:1px solid var(--line);
+    padding: 4px 10px; border-radius: 999px; background: var(--panel);
+  }
+
+  .preview{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 0;
+    margin: 32px 0;
+    overflow:hidden;
+  }
+  .preview-stage{
+    display:flex; align-items:center; justify-content:center;
+    padding: 40px 24px;
+    background:
+      linear-gradient(var(--panel-2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--panel-2) 1px, transparent 1px);
+    background-size: 24px 24px;
+    position:relative;
+    min-height: 340px;
+  }
+  .preview-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 16px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    flex-wrap: wrap; gap: 10px;
+  }
+  .preview-note{ font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  section{ margin-top: 48px; }
+  .section-title{
+    display:flex; align-items:center; gap:10px; margin-bottom: 16px;
+  }
+  .section-title .num{
+    font-family: var(--mono); font-size: 12px; color: var(--bg); background: var(--accent);
+    width: 22px; height: 22px; border-radius: 6px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .section-title h2{ font-size: 16px; margin:0; font-weight:600; }
+  section p.desc{ color: #1a1a1a; font-size: 14px; margin: 0 0 14px; line-height:1.6; font-weight:500; }
+
+  .code-block{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow:hidden;
+    margin-bottom: 14px;
+  }
+  .code-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--panel-2);
+  }
+  .code-filename{ font-family: var(--mono); font-size: 12px; color: var(--text); font-weight:700; }
+  .copy-btn{
+    font-family: var(--mono); font-size: 11px; color: var(--muted); background:transparent;
+    border: 1px solid var(--line); padding: 4px 10px; border-radius: 6px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; transition: all .15s ease;
+  }
+  .copy-btn:hover{ color: var(--text); border-color: #3a4048; }
+  .copy-btn.copied{ color: var(--accent); border-color: var(--accent-dim); }
+  pre{
+    margin:0; padding: 16px; overflow-x:auto; font-family: var(--mono); font-size: 12.5px; line-height:1.6; font-weight:500; color:#000;
+    max-height: 480px; overflow-y:auto;
+  }
+  code{ font-family: var(--mono); }
+
+  .steps{ display:flex; flex-direction:column; gap:10px; }
+  .step{
+    background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+  }
+  .step-head{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .step-head .dot{ width:6px; height:6px; border-radius:50%; background: var(--accent); flex-shrink:0; }
+  .step-head strong{ font-size:14px; }
+  .step p{ margin:0; color:#1a1a1a; font-size:13.5px; line-height:1.55; padding-left:16px; font-weight:500; }
+
+  .checklist{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+  .checklist li{ font-size:13.5px; color: #1a1a1a; font-weight:500; display:flex; gap:10px; align-items:flex-start; }
+  .checklist li::before{ content:'—'; color: var(--accent); flex-shrink:0; }
+
+  .path-note{
+    font-family: var(--mono); font-size: 12px; background: rgba(0,0,0,.05);
+    border: 1px solid var(--accent-dim); color: var(--accent); padding: 10px 14px; border-radius: 8px; margin-top:10px;
+  }
+
+  .deps-note{
+    font-family: var(--mono); font-size: 12px; background: rgba(0,0,0,.05);
+    border: 1px dashed var(--accent-dim); color: var(--text); padding: 10px 14px; border-radius: 8px; margin-top:10px;
+  }
+
+  footer{ margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; font-family: var(--mono); }
+
+  @media (max-width: 600px){
+    h1{ font-size: 26px; }
+    .wrap{ padding: 32px 16px 60px; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">shadcn/ui · componente salvo</div>
+    <h1>Mesh Gradient SVG <code>&lt;MeshGradientSVG /&gt;</code></h1>
+    <p class="sub">Um "fantasminha" recortado em SVG preenchido com um mesh gradient animado (via <code>@paper-design/shaders-react</code>), com olhos que seguem o cursor e piscam sozinhos, flutuando com <code>framer-motion</code>.</p>
+    <div class="tags">
+      <span class="tag">React</span>
+      <span class="tag">TypeScript</span>
+      <span class="tag">framer-motion</span>
+      <span class="tag">@paper-design/shaders-react</span>
+    </div>
+  </header>
+
+  <!-- LIVE PREVIEW -->
+  <div class="preview">
+    <div class="preview-stage">
+      <div id="ghostWrap" style="width:180px;">
+        <svg id="ghostSvg" xmlns="http://www.w3.org/2000/svg" width="180" height="225" viewBox="0 0 231 289" style="width:100%;height:auto;filter:drop-shadow(0 16px 30px rgba(0,0,0,.25));">
+          <defs>
+            <clipPath id="shapeClip">
+              <path d="M230.809 115.385V249.411C230.809 269.923 214.985 287.282 194.495 288.411C184.544 288.949 175.364 285.718 168.26 280C159.746 273.154 147.769 273.461 139.178 280.23C132.638 285.384 124.381 288.462 115.379 288.462C106.377 288.462 98.1451 285.384 91.6055 280.23C82.912 273.385 70.9353 273.385 62.2415 280.23C55.7532 285.334 47.598 288.411 38.7246 288.462C17.4132 288.615 0 270.667 0 249.359V115.385C0 51.6667 51.6756 0 115.404 0C179.134 0 230.809 51.6667 230.809 115.385Z" />
+            </clipPath>
+            <filter id="meshBlur" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="34"/>
+            </filter>
+          </defs>
+
+          <g clip-path="url(#shapeClip)">
+            <rect x="0" y="0" width="231" height="289" fill="#1A1A2E"/>
+            <g id="meshBlobs" filter="url(#meshBlur)">
+              <circle class="blob" data-color="#1A1A2E" data-r="150" cx="115" cy="290" r="150"/>
+              <circle class="blob" data-color="#2C3E50" data-r="120" cx="20"  cy="230" r="120"/>
+              <circle class="blob" data-color="#4A90E2" data-r="110" cx="190" cy="180" r="110"/>
+              <circle class="blob" data-color="#87CEEB" data-r="100" cx="60"  cy="90"  r="100"/>
+              <circle class="blob" data-color="#FFB3D9" data-r="90"  cx="150" cy="40"  r="90"/>
+            </g>
+          </g>
+
+          <ellipse id="eyeL" rx="20" ry="30" cx="80" cy="120" fill="#0a0a0c"/>
+          <ellipse id="eyeR" rx="20" ry="30" cx="150" cy="120" fill="#0a0a0c"/>
+        </svg>
+      </div>
+    </div>
+    <div class="preview-bar">
+      <span>preview ao vivo · aproximação em SVG + CSS/JS</span>
+      <span class="preview-note">mova o mouse — os olhos seguem o cursor</span>
+    </div>
+  </div>
+
+  <!-- CODE: component -->
+  <section>
+    <div class="section-title"><span class="num">1</span><h2>Código do componente</h2></div>
+    <p class="desc">Copie e cole em <strong style="color:var(--text)">/components/ui/shader-svg.tsx</strong></p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">components/ui/shader-svg.tsx</span>
+        <button class="copy-btn" onclick="copyCode('code1', this)">copiar</button>
+      </div>
+      <pre id="code1"><code class="language-typescript">&quot;use client&quot;
+
+import { MeshGradient } from &quot;@paper-design/shaders-react&quot;
+import { motion } from &quot;framer-motion&quot;
+import { useState, useEffect } from &quot;react&quot;
+
+export function MeshGradientSVG() {
+  const colors = [
+    &quot;#FFB3D9&quot;, // Pastel pink
+    &quot;#87CEEB&quot;, // Sky blue
+    &quot;#4A90E2&quot;, // Medium blue
+    &quot;#2C3E50&quot;, // Dark blue-gray
+    &quot;#1A1A2E&quot;, // Very dark blue
+  ]
+
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 })
+
+  useEffect(() =&gt; {
+    const handleMouseMove = (e: MouseEvent) =&gt; {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    }
+
+    window.addEventListener(&quot;mousemove&quot;, handleMouseMove)
+    return () =&gt; window.removeEventListener(&quot;mousemove&quot;, handleMouseMove)
+  }, [])
+
+  useEffect(() =&gt; {
+    const rect = document.querySelector(&quot;svg&quot;)?.getBoundingClientRect()
+    if (rect) {
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+
+      const deltaX = (mousePosition.x - centerX) * 0.08
+      const deltaY = (mousePosition.y - centerY) * 0.08
+
+      const maxOffset = 8
+      setEyeOffset({
+        x: Math.max(-maxOffset, Math.min(maxOffset, deltaX)),
+        y: Math.max(-maxOffset, Math.min(maxOffset, deltaY)),
+      })
+    }
+  }, [mousePosition])
+
+  return (
+    &lt;motion.div
+      className=&quot;relative w-full max-w-sm mx-auto p-8 rounded-lg&quot;
+      animate={{
+        y: [0, -8, 0],
+        scaleY: [1, 1.08, 1],
+      }}
+      transition={{
+        duration: 2.8,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: &quot;easeInOut&quot;,
+      }}
+      style={{ transformOrigin: &quot;top center&quot; }}
+    &gt;
+      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;231&quot; height=&quot;289&quot; viewBox=&quot;0 0 231 289&quot; className=&quot;w-full h-auto&quot;&gt;
+        &lt;defs&gt;
+          &lt;clipPath id=&quot;shapeClip&quot;&gt;
+            &lt;path d=&quot;M230.809 115.385V249.411C230.809 269.923 214.985 287.282 194.495 288.411C184.544 288.949 175.364 285.718 168.26 280C159.746 273.154 147.769 273.461 139.178 280.23C132.638 285.384 124.381 288.462 115.379 288.462C106.377 288.462 98.1451 285.384 91.6055 280.23C82.912 273.385 70.9353 273.385 62.2415 280.23C55.7532 285.334 47.598 288.411 38.7246 288.462C17.4132 288.615 0 270.667 0 249.359V115.385C0 51.6667 51.6756 0 115.404 0C179.134 0 230.809 51.6667 230.809 115.385Z&quot; /&gt;
+          &lt;/clipPath&gt;
+        &lt;/defs&gt;
+
+        &lt;foreignObject width=&quot;231&quot; height=&quot;289&quot; clipPath=&quot;url(#shapeClip)&quot;&gt;
+          &lt;div className=&quot;w-full h-full&quot;&gt;
+            &lt;MeshGradient colors={colors} className=&quot;w-full h-full&quot; speed={1} /&gt;
+          &lt;/div&gt;
+        &lt;/foreignObject&gt;
+
+        &lt;motion.ellipse
+          rx=&quot;20&quot;
+          ry=&quot;30&quot;
+          fill=&quot;currentColor&quot;
+          className=&quot;animate-blink&quot;
+          animate={{
+            cx: 80 + eyeOffset.x,
+            cy: 120 + eyeOffset.y,
+          }}
+          transition={{ type: &quot;spring&quot;, stiffness: 150, damping: 15 }}
+        /&gt;
+        &lt;motion.ellipse
+          rx=&quot;20&quot;
+          ry=&quot;30&quot;
+          fill=&quot;currentColor&quot;
+          className=&quot;animate-blink&quot;
+          animate={{
+            cx: 150 + eyeOffset.x,
+            cy: 120 + eyeOffset.y,
+          }}
+          transition={{ type: &quot;spring&quot;, stiffness: 150, damping: 15 }}
+        /&gt;
+      &lt;/svg&gt;
+
+      &lt;style jsx&gt;{`
+        .animate-blink {
+          animation: blink 3s infinite ease-in-out;
+        }
+
+        @keyframes blink {
+          0%,
+          90%,
+          100% {
+            ry: 30;
+          }
+          95% {
+            ry: 3;
+          }
+        }
+      `}&lt;/style&gt;
+    &lt;/motion.div&gt;
+  )
+}
+</code></pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">exemplo de uso — demo.tsx</span>
+        <button class="copy-btn" onclick="copyCode('code2', this)">copiar</button>
+      </div>
+      <pre id="code2"><code class="language-typescript">import { MeshGradientSVG } from &quot;@/components/ui/shader-svg&quot;;
+
+export default function DemoOne() {
+  return &lt;MeshGradientSVG /&gt;;
+}
+</code></pre>
+    </div>
+
+    <div class="deps-note">
+      npm install framer-motion @paper-design/shaders-react
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section>
+    <div class="section-title"><span class="num">2</span><h2>Pré-requisitos do projeto</h2></div>
+    <p class="desc">Este componente assume um projeto shadcn/ui já configurado com Tailwind CSS e TypeScript. Se ainda não tiver:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">setup — terminal</span>
+        <button class="copy-btn" onclick="copyCode('code3', this)">copiar</button>
+      </div>
+      <pre id="code3"><code class="language-bash"># criar projeto (se ainda não existir)
+npx create-next-app@latest meu-app --typescript --tailwind --eslint
+
+# dentro do projeto: iniciar shadcn/ui
+npx shadcn@latest init
+
+# isso cria automaticamente components.json e a pasta
+# components/ui — que é o local padrão esperado
+
+# dependências específicas deste componente
+npm install framer-motion @paper-design/shaders-react</code></pre>
+    </div>
+    <div class="path-note">
+      Se o caminho padrão de componentes do seu projeto não for <strong>/components/ui</strong>, crie essa pasta manualmente: é o local convencionado pelo shadcn/ui para primitivos reutilizáveis, e manter esse padrão evita que o CLI e outros componentes gerados percam a referência de import (<code>@/components/ui/...</code>).
+    </div>
+  </section>
+
+  <!-- INTEGRATION STEPS -->
+  <section>
+    <div class="section-title"><span class="num">3</span><h2>Passos de integração</h2></div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>Colar o arquivo</strong></div>
+        <p>Salve o código acima em <code>components/ui/shader-svg.tsx</code>.</p>
+      </div>
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>Dependências externas</strong></div>
+        <p><code>framer-motion</code> cuida das animações (flutuação do corpo, spring dos olhos). <code>@paper-design/shaders-react</code> fornece o componente <code>&lt;MeshGradient /&gt;</code>, um shader WebGL que gera o gradiente animado dentro do <code>foreignObject</code> recortado pelo SVG.</p>
+      </div>
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>"use client"</strong></div>
+        <p>O componente usa <code>useState</code>, <code>useEffect</code> e listeners de <code>mousemove</code> — se o projeto for Next.js App Router, mantenha a diretiva <code>"use client"</code> no topo do arquivo.</p>
+      </div>
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>Onde usar</strong></div>
+        <p>Funciona bem como mascote/avatar de marca, elemento decorativo em landing pages, estado vazio ("empty state") animado, ou indicador de assistente/IA com personalidade visual.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTES -->
+  <section>
+    <div class="section-title"><span class="num">4</span><h2>Notas técnicas</h2></div>
+    <ul class="checklist">
+      <li>Os olhos seguem o cursor via listener global de <code>mousemove</code> na <code>window</code>; o deslocamento é limitado a <code>±8px</code> (<code>maxOffset</code>) e suavizado por uma spring do framer-motion.</li>
+      <li>O piscar é feito só em CSS (<code>@keyframes blink</code> alterando <code>ry</code>), independente do rastreamento do cursor.</li>
+      <li>O corpo inteiro flutua com uma animação infinita de <code>y</code> e <code>scaleY</code>, dando um efeito de "respiração".</li>
+      <li>A forma do fantasma é um único <code>&lt;path&gt;</code> usado como <code>clipPath</code>; o <code>&lt;MeshGradient /&gt;</code> é renderizado dentro de um <code>foreignObject</code> recortado por esse path.</li>
+      <li>Sem imagens externas — as cores do gradiente são definidas no array <code>colors</code>, fácil de trocar para casar com a identidade visual do projeto.</li>
+      <li>O uso de <code>style jsx</code> assume suporte a styled-jsx (padrão em projetos Next.js); em outros setups, mova o <code>@keyframes blink</code> para um arquivo CSS global.</li>
+    </ul>
+  </section>
+
+  <!-- ORIGINAL PROMPT -->
+  <section>
+    <div class="section-title"><span class="num">5</span><h2>Prompt original de integração</h2></div>
+    <p class="desc">Prompt usado para gerar as instruções de integração deste componente — guarde para reaproveitar com outros componentes shadcn.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">prompt.txt</span>
+        <button class="copy-btn" onclick="copyCode('code4', this)">copiar</button>
+      </div>
+      <pre id="code4"><code>You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure  
+- Tailwind CSS
+- Typescript
+
+If it doesn&#x27;t, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles. 
+If default path for components is not /components/ui, provide instructions on why it&#x27;s important to create this folder
+Copy-paste this component to /components/ui folder:
+```tsx
+shader-svg.tsx
+&quot;use client&quot;
+
+import { MeshGradient } from &quot;@paper-design/shaders-react&quot;
+import { motion } from &quot;framer-motion&quot;
+import { useState, useEffect } from &quot;react&quot;
+
+export function MeshGradientSVG() {
+  const colors = [
+    &quot;#FFB3D9&quot;, // Pastel pink
+    &quot;#87CEEB&quot;, // Sky blue
+    &quot;#4A90E2&quot;, // Medium blue
+    &quot;#2C3E50&quot;, // Dark blue-gray
+    &quot;#1A1A2E&quot;, // Very dark blue
+  ]
+
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 })
+
+  useEffect(() =&gt; {
+    const handleMouseMove = (e: MouseEvent) =&gt; {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    }
+
+    window.addEventListener(&quot;mousemove&quot;, handleMouseMove)
+    return () =&gt; window.removeEventListener(&quot;mousemove&quot;, handleMouseMove)
+  }, [])
+
+  useEffect(() =&gt; {
+    const rect = document.querySelector(&quot;svg&quot;)?.getBoundingClientRect()
+    if (rect) {
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+
+      const deltaX = (mousePosition.x - centerX) * 0.08
+      const deltaY = (mousePosition.y - centerY) * 0.08
+
+      const maxOffset = 8
+      setEyeOffset({
+        x: Math.max(-maxOffset, Math.min(maxOffset, deltaX)),
+        y: Math.max(-maxOffset, Math.min(maxOffset, deltaY)),
+      })
+    }
+  }, [mousePosition])
+
+  return (
+    &lt;motion.div
+      className=&quot;relative w-full max-w-sm mx-auto p-8 rounded-lg&quot;
+      animate={{
+        y: [0, -8, 0],
+        scaleY: [1, 1.08, 1],
+      }}
+      transition={{
+        duration: 2.8,
+        repeat: Number.POSITIVE_INFINITY,
+        ease: &quot;easeInOut&quot;,
+      }}
+      style={{ transformOrigin: &quot;top center&quot; }}
+    &gt;
+      &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;231&quot; height=&quot;289&quot; viewBox=&quot;0 0 231 289&quot; className=&quot;w-full h-auto&quot;&gt;
+        &lt;defs&gt;
+          &lt;clipPath id=&quot;shapeClip&quot;&gt;
+            &lt;path d=&quot;M230.809 115.385V249.411C230.809 269.923 214.985 287.282 194.495 288.411C184.544 288.949 175.364 285.718 168.26 280C159.746 273.154 147.769 273.461 139.178 280.23C132.638 285.384 124.381 288.462 115.379 288.462C106.377 288.462 98.1451 285.384 91.6055 280.23C82.912 273.385 70.9353 273.385 62.2415 280.23C55.7532 285.334 47.598 288.411 38.7246 288.462C17.4132 288.615 0 270.667 0 249.359V115.385C0 51.6667 51.6756 0 115.404 0C179.134 0 230.809 51.6667 230.809 115.385Z&quot; /&gt;
+          &lt;/clipPath&gt;
+        &lt;/defs&gt;
+
+        &lt;foreignObject width=&quot;231&quot; height=&quot;289&quot; clipPath=&quot;url(#shapeClip)&quot;&gt;
+          &lt;div className=&quot;w-full h-full&quot;&gt;
+            &lt;MeshGradient colors={colors} className=&quot;w-full h-full&quot; speed={1} /&gt;
+          &lt;/div&gt;
+        &lt;/foreignObject&gt;
+
+        &lt;motion.ellipse
+          rx=&quot;20&quot;
+          ry=&quot;30&quot;
+          fill=&quot;currentColor&quot;
+          className=&quot;animate-blink&quot;
+          animate={{
+            cx: 80 + eyeOffset.x,
+            cy: 120 + eyeOffset.y,
+          }}
+          transition={{ type: &quot;spring&quot;, stiffness: 150, damping: 15 }}
+        /&gt;
+        &lt;motion.ellipse
+          rx=&quot;20&quot;
+          ry=&quot;30&quot;
+          fill=&quot;currentColor&quot;
+          className=&quot;animate-blink&quot;
+          animate={{
+            cx: 150 + eyeOffset.x,
+            cy: 120 + eyeOffset.y,
+          }}
+          transition={{ type: &quot;spring&quot;, stiffness: 150, damping: 15 }}
+        /&gt;
+      &lt;/svg&gt;
+
+      &lt;style jsx&gt;{`
+        .animate-blink {
+          animation: blink 3s infinite ease-in-out;
+        }
+
+        @keyframes blink {
+          0%,
+          90%,
+          100% {
+            ry: 30;
+          }
+          95% {
+            ry: 3;
+          }
+        }
+      `}&lt;/style&gt;
+    &lt;/motion.div&gt;
+  )
+}
+
+
+demo.tsx
+import { MeshGradientSVG } from &quot;@/components/ui/shader-svg&quot;;
+
+export default function DemoOne() {
+  return &lt;MeshGradientSVG /&gt;;
+}
+
+```
+
+Install NPM dependencies:
+```bash
+framer-motion, @paper-design/shaders-react
+```
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component&#x27;s argumens and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them</code></pre>
+    </div>
+  </section>
+
+  <footer>
+    salvo em shader-svg.html · shadcn/ui component reference
+  </footer>
+
+</div>
+
+<script>
+  hljs.highlightAll();
+
+  function copyCode(id, btn){
+    const el = document.getElementById(id);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.textContent = 'copiado ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+    });
+  }
+
+  // ---- Live preview approximation (pure SVG/CSS/JS, no external libs) ----
+  const wrap = document.getElementById('ghostWrap');
+  const svg = document.getElementById('ghostSvg');
+  const eyeL = document.getElementById('eyeL');
+  const eyeR = document.getElementById('eyeR');
+
+  // Set up mesh blobs: color + independent orbit per blob
+  const blobEls = Array.from(document.querySelectorAll('#meshBlobs .blob'));
+  const blobs = blobEls.map((el, i) => {
+    el.setAttribute('fill', el.getAttribute('data-color'));
+    return {
+      el,
+      baseX: parseFloat(el.getAttribute('cx')),
+      baseY: parseFloat(el.getAttribute('cy')),
+      ampX: 26 + i * 6,
+      ampY: 22 + i * 5,
+      speed: 0.35 + i * 0.11,
+      phase: i * 1.7,
+    };
+  });
+
+  // Floating breathing animation
+  let floatT = 0;
+  function floatLoop(){
+    floatT += 0.016;
+    const y = Math.sin(floatT / 2.8 * Math.PI) * 8;
+    const scaleY = 1 + Math.sin(floatT / 2.8 * Math.PI) * 0.08;
+    wrap.style.transform = `translateY(${-Math.abs(y)}px) scaleY(${scaleY})`;
+    wrap.style.transformOrigin = 'top center';
+    requestAnimationFrame(floatLoop);
+  }
+  floatLoop();
+
+  // Eyes follow cursor (clamped)
+  let targetX = 0, targetY = 0, curX = 0, curY = 0;
+  document.addEventListener('mousemove', (e) => {
+    const rect = svg.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const deltaX = (e.clientX - centerX) * 0.08;
+    const deltaY = (e.clientY - centerY) * 0.08;
+    const maxOffset = 8;
+    targetX = Math.max(-maxOffset, Math.min(maxOffset, deltaX));
+    targetY = Math.max(-maxOffset, Math.min(maxOffset, deltaY));
+  });
+  function eyeLoop(){
+    curX += (targetX - curX) * 0.15;
+    curY += (targetY - curY) * 0.15;
+    eyeL.setAttribute('cx', 80 + curX);
+    eyeL.setAttribute('cy', 120 + curY);
+    eyeR.setAttribute('cx', 150 + curX);
+    eyeR.setAttribute('cy', 120 + curY);
+    requestAnimationFrame(eyeLoop);
+  }
+  eyeLoop();
+
+  // Blink
+  function blink(){
+    eyeL.setAttribute('ry', '3');
+    eyeR.setAttribute('ry', '3');
+    setTimeout(() => {
+      eyeL.setAttribute('ry', '30');
+      eyeR.setAttribute('ry', '30');
+    }, 150);
+    setTimeout(blink, 3000);
+  }
+  setTimeout(blink, 2850);
+
+  // Fluid mesh motion: each blob drifts on its own slow, offset orbit
+  let meshT = 0;
+  function meshLoop(){
+    meshT += 0.012;
+    blobs.forEach((b) => {
+      const x = b.baseX + Math.sin(meshT * b.speed + b.phase) * b.ampX;
+      const y = b.baseY + Math.cos(meshT * b.speed * 0.8 + b.phase) * b.ampY;
+      b.el.setAttribute('cx', x);
+      b.el.setAttribute('cy', y);
+    });
+    requestAnimationFrame(meshLoop);
+  }
+  meshLoop();
+</script>
+
+</body>
+</html>

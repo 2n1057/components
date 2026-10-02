@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Partículas — mohi</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    /* Container das partículas — ocupa a tela inteira */
+    .particles-stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: #ffffff;
+      overflow: hidden;
+    }
+
+    .mp-dots {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s cubic-bezier(.4, 0, .2, 1);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 78%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 78%, transparent 100%);
+    }
+
+    .mp-dots.show {
+      opacity: 1;
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+
+<body>
+
+  <div class="particles-stage" id="particlesStage">
+    <div class="mp-dots" id="mohiosDots"></div>
+  </div>
+
+  <script>
+    // mohiOS — fundo de pontos animado (extraído tal e qual do hero do index.html)
+    (function initMohiosDots() {
+      const container = document.getElementById("mohiosDots");
+      if (!container || typeof THREE === "undefined") return;
+
+      const SEPARATION = 130;
+      const AMOUNTX = 40;
+      const AMOUNTY = 40;
+
+      let width = container.clientWidth || window.innerWidth;
+      let height = container.clientHeight || window.innerHeight;
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(60, width / height, 1, 10000);
+      camera.position.set(0, 780, 1220);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(0, 0, 0);
+
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "low-power" });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      renderer.setSize(width, height);
+      renderer.setClearColor(0x0a0a0a, 0);
+      container.appendChild(renderer.domElement);
+
+      const positions = [];
+      const grid = [];
+      const angles = [];
+      const scales = [];
+      const geometry = new THREE.BufferGeometry();
+
+      for (let ix = 0; ix < AMOUNTX; ix++) {
+        for (let iy = 0; iy < AMOUNTY; iy++) {
+          const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
+          const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
+          positions.push(x, 0, z);
+          // coordenada normalizada (-1..1) de cada partícula na grade,
+          // usada no shader para medir a distância até o cursor
+          grid.push((ix / (AMOUNTX - 1)) * 2 - 1, (iy / (AMOUNTY - 1)) * 2 - 1);
+          angles.push((Math.random() - 0.5) * 0.14); // traço praticamente vertical, com leve variação orgânica
+          scales.push(0.82 + Math.random() * 0.36);  // menos variação de tamanho — o tamanho real vem da distância até o cursor
+        }
+      }
+
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute("aGrid", new THREE.Float32BufferAttribute(grid, 2));
+      geometry.setAttribute("aAngle", new THREE.Float32BufferAttribute(angles, 1));
+      geometry.setAttribute("aScale", new THREE.Float32BufferAttribute(scales, 1));
+
+      // ─── Material com shader próprio ───────────────────────────────
+      // Por padrão as partículas são INVISÍVEIS (fundo branco limpo).
+      // Só ganham vida — tamanho, cor e opacidade — dentro de um raio ao
+      // redor do cursor, formando uma nuvem de "confete" que acompanha
+      // o mouse. Nela, uma onda radial nasce no ponto do cursor e se
+      // espalha para fora. Cada partícula é desenhada como um pequeno
+      // traço rotacionado (não um círculo), e a cor gira em arco-íris
+      // conforme o ângulo em relação ao cursor.
+      const material = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 },
+          uMouse: { value: new THREE.Vector2(999, 999) },
+          uMouseActive: { value: 0 },
+          uMouseVel: { value: new THREE.Vector2(0, 0) },
+        },
+        transparent: true,
+        depthWrite: false,
+        vertexShader: `
+          attribute vec2 aGrid;
+          attribute float aAngle;
+          attribute float aScale;
+          uniform float uTime;
+          uniform vec2 uMouse;
+          uniform float uMouseActive;
+          uniform vec2 uMouseVel;
+          varying vec3 vColor;
+          varying float vAlpha;
+          varying float vAngle;
+
+          vec3 hsl2rgb(vec3 c) {
+            vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+            return c.z + c.y * (rgb - 0.5) * (1.0 - abs(2.0 * c.z - 1.0));
+          }
+
+          void main() {
+            vec2 toMouse = aGrid - uMouse;
+            float dist = length(toMouse);
+            // raio de influência do cursor: fora dele, influence -> 0
+            float influence = exp(-pow(dist / 0.55, 2.0)) * uMouseActive;
+            float influenceS = smoothstep(0.0, 1.0, influence);
+
+            // onda radial, determinística, nascendo no cursor
+            float ripple = sin(dist * 4.0 - uTime * 0.5) * influence * 70.0;
+
+            // "gravidade": o lado pra onde o cursor está se movendo é puxado
+            // pra frente (mais perto/maior), o lado oposto é empurrado pra trás
+            float velLen = length(uMouseVel);
+            vec2 velDir = velLen > 0.00005 ? uMouseVel / velLen : vec2(0.0);
+            float lean = dot(normalize(toMouse + vec2(0.00001)), velDir);
+            float drag = lean * clamp(velLen * 55.0, 0.0, 1.0) * influence;
+
+            vec3 pos = vec3(position.x, ripple + drag * 240.0, position.z);
+            vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+
+            // tamanho: maior perto do cursor, afinando suavemente até sumir longe dele
+            float size = mix(0.0, 22.0, influenceS) * aScale * (1.0 + drag * 0.35);
+            gl_PointSize = max(size, 0.0) * (460.0 / -mvPosition.z);
+            gl_Position = projectionMatrix * mvPosition;
+
+            // azul forte fixo (mesmo tom da marca) — só a luminosidade varia
+            // com a proximidade do cursor
+            float hue = 0.662;
+            vColor = hsl2rgb(vec3(hue, 1.0, mix(0.32, 0.62, influence)));
+            vAlpha = influence;
+            vAngle = aAngle;
+          }
+        `,
+        fragmentShader: `
+          varying vec3 vColor;
+          varying float vAlpha;
+          varying float vAngle;
+          void main() {
+            if (vAlpha < 0.01) discard;
+            vec2 uv = gl_PointCoord - vec2(0.5);
+            float c = cos(vAngle);
+            float s = sin(vAngle);
+            vec2 ruv = vec2(c * uv.x - s * uv.y, s * uv.x + c * uv.y);
+            // SDF de retângulo arredondado — dá o formato de "tracinho"
+            vec2 d2 = abs(ruv) - vec2(0.11, 0.4);
+            float dist2 = length(max(d2, 0.0)) + min(max(d2.x, d2.y), 0.0);
+            if (dist2 > 0.06) discard;
+            float edge = smoothstep(0.06, -0.02, dist2);
+            gl_FragColor = vec4(vColor, vAlpha * edge);
+          }
+        `,
+      });
+
+      const points = new THREE.Points(geometry, material);
+      scene.add(points);
+
+      let count = 0;
+      let animationId = null;
+      let running = false;
+      let lastTime = 0;
+      const SPEED = 0.0006; // bem mais lento e sereno
+
+      // ─── Interação com o cursor ─────────────────────────────────────
+      let targetMouseX = 999, targetMouseY = 999;
+      let currentMouseX = 999, currentMouseY = 999;
+      let targetActive = 0, currentActive = 0;
+
+      // "cursor" simulado vagueando sozinho quando o mouse real não
+      // está sobre a área — nunca some, só transiciona suavemente
+      let hovering = false;
+      let simTargetX = 0, simTargetY = 0;
+      let nextSimChange = 0;
+
+      function pickNewSimTarget(now, delayMin, delayMax) {
+        simTargetX = (Math.random() * 2 - 1) * 0.6;
+        simTargetY = (Math.random() * 2 - 1) * 0.42;
+        nextSimChange = now + delayMin + Math.random() * (delayMax - delayMin);
+      }
+
+      const stageEl = document.getElementById("particlesStage");
+      if (stageEl) {
+        stageEl.addEventListener("mousemove", (e) => {
+          hovering = true;
+          const rect = stageEl.getBoundingClientRect();
+          targetMouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          targetMouseY = ((e.clientY - rect.top) / rect.height) * 2 - 1;
+          targetActive = 1;
+        });
+        stageEl.addEventListener("mouseleave", () => {
+          hovering = false;
+          simTargetX = targetMouseX;
+          simTargetY = targetMouseY;
+          nextSimChange = performance.now() + 900 + Math.random() * 900;
+        });
+      }
+
+      // velocidade suavizada do cursor — dá a sensação de "arrasto"/gravidade
+      let mouseVelX = 0, mouseVelY = 0;
+
+      function animate(now) {
+        if (!running) return;
+        animationId = requestAnimationFrame(animate);
+        if (!lastTime) lastTime = now;
+        const delta = now - lastTime;
+        lastTime = now;
+        count += delta * SPEED;
+
+        if (!hovering) {
+          if (now >= nextSimChange) pickNewSimTarget(now, 1800, 3400);
+          targetMouseX = simTargetX;
+          targetMouseY = simTargetY;
+          targetActive = 1;
+        }
+
+        const prevMouseX = currentMouseX;
+        const prevMouseY = currentMouseY;
+        currentMouseX += (targetMouseX - currentMouseX) * 0.02;
+        currentMouseY += (targetMouseY - currentMouseY) * 0.02;
+        currentActive += (targetActive - currentActive) * 0.05;
+
+        const instVelX = currentMouseX - prevMouseX;
+        const instVelY = currentMouseY - prevMouseY;
+        mouseVelX += (instVelX - mouseVelX) * 0.06;
+        mouseVelY += (instVelY - mouseVelY) * 0.06;
+
+        material.uniforms.uTime.value = count;
+        material.uniforms.uMouse.value.set(currentMouseX, currentMouseY);
+        material.uniforms.uMouseActive.value = currentActive;
+        material.uniforms.uMouseVel.value.set(mouseVelX, mouseVelY);
+
+        renderer.render(scene, camera);
+      }
+
+      function startAnimating() {
+        if (running) return;
+        running = true;
+        lastTime = 0;
+        animationId = requestAnimationFrame(animate);
+      }
+      function stopAnimating() {
+        running = false;
+        if (animationId) cancelAnimationFrame(animationId);
+      }
+
+      let resizeTimer = null;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          width = container.clientWidth || window.innerWidth;
+          height = container.clientHeight || window.innerHeight;
+          camera.aspect = width / height;
+          camera.updateProjectionMatrix();
+          renderer.setSize(width, height);
+        }, 150);
+      });
+
+      startAnimating();
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) stopAnimating();
+        else startAnimating();
+      });
+
+      // Revela as partículas com fade-in assim que tudo estiver pronto
+      requestAnimationFrame(() => {
+        container.classList.add("show");
+        currentMouseX = 0;
+        currentMouseY = 0;
+        targetMouseX = 0;
+        targetMouseY = 0;
+        currentActive = 0;
+        targetActive = 1;
+        simTargetX = 0;
+        simTargetY = 0;
+        nextSimChange = performance.now() + 2600;
+      });
+    })();
+  </script>
+
+</body>
+
+</html>

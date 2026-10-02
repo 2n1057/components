@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>02 — Badge Editável Animada</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e2e1dc;
+    --text: #1a1a1a;
+    --muted: #888;
+    --ring: #1a1a1a;
+    --check-bg: #1a1a1a;
+    --check-color: #fff;
+    --edit-bg: #ebebeb;
+    --edit-color: #555;
+    --selection: #c0c0c0;
+  }
+
+  body {
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    padding: 3rem 2rem;
+    font-family: 'Syne', sans-serif;
+    color: var(--text);
+  }
+
+  .page-label {
+    position: fixed;
+    top: 1.5rem;
+    left: 2rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  /* ─── CHIP ───────────────────────────────── */
+  .chip-wrapper {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0.3rem 0.3rem 0.3rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.25s, box-shadow 0.25s, padding 0.3s ease;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  .chip.editing {
+    gap: 2rem;
+    box-shadow:
+      0 0 0 2px var(--ring),
+      0 4px 12px rgba(0,0,0,0.08);
+    border-color: transparent;
+    padding-right: 0.3rem;
+  }
+
+  .chip-input {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    background: none;
+    border: none;
+    outline: none;
+    width: 8rem;
+    cursor: inherit;
+    caret-color: var(--text);
+    text-transform: capitalize;
+  }
+
+  .chip-input::selection { background: var(--selection); }
+
+  .chip-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition:
+      transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+      opacity 0.2s,
+      background 0.2s;
+  }
+
+  .btn-edit {
+    background: var(--edit-bg);
+    color: var(--edit-color);
+  }
+
+  .btn-check {
+    background: var(--check-bg);
+    color: var(--check-color);
+  }
+
+  /* icon animation states */
+  .icon-enter {
+    animation: pop-in 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .icon-exit {
+    animation: pop-out 0.2s ease-in both;
+  }
+
+  @keyframes pop-in {
+    from { transform: scale(0) rotate(-45deg); opacity: 0; filter: blur(4px); }
+    to   { transform: scale(1) rotate(0deg);   opacity: 1; filter: blur(0); }
+  }
+  @keyframes pop-out {
+    from { transform: scale(1); opacity: 1; filter: blur(0); }
+    to   { transform: scale(0); opacity: 0; filter: blur(4px); }
+  }
+
+  /* ─── DEMO PALETTE: multiple chip styles ─── */
+  .chip.style-green {
+    --border: #d0e8c8;
+    --surface: #f2faf0;
+    --ring: #4caf50;
+    --check-bg: #4caf50;
+    --edit-bg: #ddf0d8;
+    --edit-color: #2e7d32;
+  }
+
+  .chip.style-blue {
+    --border: #c8d8f0;
+    --surface: #f0f5fd;
+    --ring: #3b82f6;
+    --check-bg: #3b82f6;
+    --edit-bg: #dce9fb;
+    --edit-color: #1d4ed8;
+  }
+
+  .chip.style-amber {
+    --border: #f0e2b8;
+    --surface: #fffbef;
+    --ring: #f59e0b;
+    --check-bg: #f59e0b;
+    --edit-bg: #fef3c7;
+    --edit-color: #b45309;
+  }
+
+  .chip.style-purple {
+    --border: #ddd0f0;
+    --surface: #f8f5fd;
+    --ring: #8b5cf6;
+    --check-bg: #8b5cf6;
+    --edit-bg: #ede9fe;
+    --edit-color: #6d28d9;
+  }
+
+  /* ─── SAVE FEEDBACK ──────────────────────── */
+  .save-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.2rem;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    font-family: 'Syne Mono', monospace;
+    transition: opacity 0.25s, transform 0.25s;
+  }
+
+  .save-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .hint {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<span class="page-label">Componente #02 — Badge Editável Animada</span>
+
+<h1>Clique no lápis para editar</h1>
+
+<div class="chip-wrapper">
+  <div class="chip" data-label="Favoritos" id="chip-1">
+    <input class="chip-input" type="text" value="Favoritos" readonly />
+    <button class="chip-btn btn-edit icon-enter" aria-label="Editar">
+      <!-- pencil icon -->
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="chip style-green" data-label="Projetos" id="chip-2">
+    <input class="chip-input" type="text" value="Projetos" readonly />
+    <button class="chip-btn btn-edit icon-enter" aria-label="Editar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="chip style-blue" data-label="Trabalho" id="chip-3">
+    <input class="chip-input" type="text" value="Trabalho" readonly />
+    <button class="chip-btn btn-edit icon-enter" aria-label="Editar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="chip style-amber" data-label="Ideias" id="chip-4">
+    <input class="chip-input" type="text" value="Ideias" readonly />
+    <button class="chip-btn btn-edit icon-enter" aria-label="Editar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="chip style-purple" data-label="Arquivo" id="chip-5">
+    <input class="chip-input" type="text" value="Arquivo" readonly />
+    <button class="chip-btn btn-edit icon-enter" aria-label="Editar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<span class="hint">Enter ou ✓ para salvar · Esc para cancelar</span>
+
+<div class="save-toast" id="toast">Salvo!</div>
+
+<script>
+  const CHECK_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`;
+  const PENCIL_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+
+  const toast = document.getElementById('toast');
+  let toastTimer;
+
+  function showToast(label) {
+    clearTimeout(toastTimer);
+    toast.textContent = `"${label}" salvo ✓`;
+    toast.classList.add('show');
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+  }
+
+  document.querySelectorAll('.chip').forEach(chip => {
+    const input = chip.querySelector('.chip-input');
+    const btn   = chip.querySelector('.chip-btn');
+    let editing = false;
+    let original = '';
+
+    function enterEdit() {
+      editing = true;
+      original = input.value;
+      input.readOnly = false;
+      chip.classList.add('editing');
+      btn.classList.remove('btn-edit');
+      btn.classList.add('btn-check');
+      btn.innerHTML = CHECK_SVG;
+      btn.classList.remove('icon-exit');
+      void btn.offsetWidth; // reflow
+      btn.classList.add('icon-enter');
+      requestAnimationFrame(() => {
+        input.focus();
+        input.select();
+      });
+    }
+
+    function save() {
+      editing = false;
+      const val = input.value.trim() || 'Sem título';
+      input.value = val;
+      input.readOnly = true;
+      chip.classList.remove('editing');
+      btn.classList.remove('btn-check');
+      btn.classList.add('btn-edit');
+      btn.innerHTML = PENCIL_SVG;
+      btn.classList.remove('icon-enter');
+      void btn.offsetWidth;
+      btn.classList.add('icon-enter');
+      showToast(val);
+    }
+
+    function cancel() {
+      editing = false;
+      input.value = original;
+      input.readOnly = true;
+      chip.classList.remove('editing');
+      btn.classList.remove('btn-check');
+      btn.classList.add('btn-edit');
+      btn.innerHTML = PENCIL_SVG;
+      btn.classList.remove('icon-enter');
+      void btn.offsetWidth;
+      btn.classList.add('icon-enter');
+    }
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (!editing) enterEdit();
+      else save();
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+    });
+
+    input.addEventListener('click', e => {
+      if (!editing) e.stopPropagation();
+    });
+  });
+</script>
+</body>
+</html>

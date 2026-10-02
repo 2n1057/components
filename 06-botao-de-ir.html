@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>06 — Botão de Ir</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f0f13;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    padding: 3rem 2rem;
+    font-family: 'Outfit', sans-serif;
+    color: #f0f0f0;
+  }
+
+  .page-label {
+    position: fixed;
+    top: 1.5rem;
+    left: 2rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(240,240,240,0.25);
+    font-weight: 500;
+  }
+
+  h2 {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(240,240,240,0.3);
+    font-weight: 600;
+  }
+
+  /* ─── GRID ───────────────────────────────── */
+  .btn-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ─── BASE BUTTON ────────────────────────── */
+  .go-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.23,1,0.32,1);
+    user-select: none;
+  }
+
+  /* ────────────────────────────────────────── */
+  /* STYLE 1: sliding circle (original design) */
+  .go-btn.style-slide {
+    background: #7c3aed;
+    color: #fff;
+    border-radius: 999px;
+    height: 52px;
+    padding-left: 1.6rem;
+    padding-right: 3.4rem;
+    font-size: 0.9rem;
+  }
+
+  .go-btn.style-slide .btn-label { position: relative; z-index: 1; transition: all 0.5s; }
+
+  .go-btn.style-slide .icon-circle {
+    position: absolute;
+    right: 4px;
+    width: 44px; height: 44px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: right 0.5s cubic-bezier(0.23,1,0.32,1), transform 0.5s;
+    z-index: 1;
+  }
+
+  .go-btn.style-slide:hover {
+    padding-left: 3.4rem;
+    padding-right: 1.6rem;
+  }
+
+  .go-btn.style-slide:hover .icon-circle {
+    right: calc(100% - 48px);
+    transform: rotate(45deg);
+  }
+
+  /* STYLE 2: outlined, fill on hover */
+  .go-btn.style-outline {
+    background: transparent;
+    color: #f0f0f0;
+    border: 2px solid rgba(240,240,240,0.25);
+    border-radius: 999px;
+    height: 52px;
+    padding: 0 1.6rem 0 1.6rem;
+    font-size: 0.9rem;
+    gap: 0.8rem;
+  }
+
+  .go-btn.style-outline::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    border-radius: inherit;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.23,1,0.32,1);
+    z-index: 0;
+  }
+
+  .go-btn.style-outline:hover::before { transform: scaleX(1); }
+
+  .go-btn.style-outline .btn-label,
+  .go-btn.style-outline svg {
+    position: relative;
+    z-index: 1;
+    transition: color 0.3s;
+  }
+
+  .go-btn.style-outline:hover .btn-label,
+  .go-btn.style-outline:hover svg { color: #0f0f13; }
+
+  .go-btn.style-outline svg {
+    transition: transform 0.3s, color 0.3s;
+  }
+  .go-btn.style-outline:hover svg { transform: rotate(45deg) scale(1.2); }
+
+  /* STYLE 3: magnetic blob */
+  .go-btn.style-blob {
+    background: #c8f064;
+    color: #0f0f13;
+    border-radius: 14px;
+    height: 52px;
+    padding: 0 1.6rem;
+    font-size: 0.9rem;
+    gap: 0.7rem;
+    box-shadow: 0 4px 20px rgba(200,240,100,0.25);
+  }
+
+  .go-btn.style-blob:hover {
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(200,240,100,0.4);
+    transform: translateY(-2px) scale(1.03);
+  }
+
+  .go-btn.style-blob svg { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+  .go-btn.style-blob:hover svg { transform: translate(3px, -3px); }
+
+  /* STYLE 4: ghost + underline */
+  .go-btn.style-text {
+    background: none;
+    color: rgba(240,240,240,0.6);
+    border-radius: 0;
+    height: auto;
+    padding: 0;
+    font-size: 0.9rem;
+    gap: 0.5rem;
+    font-weight: 500;
+  }
+
+  .go-btn.style-text::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.3s;
+  }
+
+  .go-btn.style-text:hover { color: #fff; }
+  .go-btn.style-text:hover::after { transform: scaleX(1); transform-origin: left; }
+  .go-btn.style-text svg { transition: transform 0.3s; }
+  .go-btn.style-text:hover svg { transform: translateX(4px); }
+
+  /* STYLE 5: icon-only round */
+  .go-btn.style-icon-only {
+    background: rgba(255,255,255,0.07);
+    color: #f0f0f0;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 50%;
+    width: 52px; height: 52px;
+    padding: 0;
+    justify-content: center;
+    transition: background 0.3s, border-color 0.3s, transform 0.3s;
+  }
+
+  .go-btn.style-icon-only:hover {
+    background: #c8f064;
+    color: #0f0f13;
+    border-color: transparent;
+    transform: scale(1.1) rotate(-10deg);
+  }
+</style>
+</head>
+<body>
+
+<span class="page-label">Componente #06 — Botão de Ir</span>
+
+<h2>Variações de botão</h2>
+
+<div class="btn-grid">
+
+  <!-- 1. Sliding circle -->
+  <button class="go-btn style-slide">
+    <span class="btn-label">Vamos Colaborar</span>
+    <div class="icon-circle">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 17L17 7M7 7h10v10"/>
+      </svg>
+    </div>
+  </button>
+
+  <!-- 2. Outlined fill -->
+  <button class="go-btn style-outline">
+    <span class="btn-label">Ver Projetos</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 17L17 7M7 7h10v10"/>
+    </svg>
+  </button>
+
+  <!-- 3. Blob green -->
+  <button class="go-btn style-blob">
+    <span class="btn-label">Começar Agora</span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 17L17 7M7 7h10v10"/>
+    </svg>
+  </button>
+
+  <!-- 4. Text + arrow -->
+  <button class="go-btn style-text">
+    <span class="btn-label">Saiba mais</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14M12 5l7 7-7 7"/>
+    </svg>
+  </button>
+
+  <!-- 5. Icon only -->
+  <button class="go-btn style-icon-only" title="Ir">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 17L17 7M7 7h10v10"/>
+    </svg>
+  </button>
+
+</div>
+
+</body>
+</html>

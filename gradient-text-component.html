@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradientText — Componente shadcn/ui</title>
+<style>
+  :root{
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-2: #f4f4f4;
+    --line: #1a1a1a;
+    --text: #000000;
+    --muted: #333333;
+    --accent: #000000;
+    --accent-dim: #000000;
+    --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:var(--sans); }
+  body{
+    background-image:
+      radial-gradient(circle at 1px 1px, #d8d8d8 1px, transparent 0);
+    background-size: 28px 28px;
+  }
+  .wrap{ max-width: 880px; margin: 0 auto; padding: 56px 24px 100px; }
+
+  /* Header */
+  header{ margin-bottom: 40px; }
+  .eyebrow{
+    font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); display:flex; align-items:center; gap:8px; margin-bottom: 14px; font-weight:700;
+  }
+  .eyebrow::before{ content:''; width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:none; }
+  h1{ font-size: 34px; line-height:1.15; margin:0 0 10px; letter-spacing:-0.02em; }
+  h1 code{ font-family: var(--mono); color: var(--accent); font-size: .85em; font-weight:700; }
+  .sub{ color: #1a1a1a; font-size: 15px; max-width: 62ch; margin:0; font-weight:500; }
+  .tags{ display:flex; gap:8px; margin-top:18px; flex-wrap:wrap; }
+  .tag{
+    font-family: var(--mono); font-size: 11px; color: var(--text); border:1px solid var(--line);
+    padding: 4px 10px; border-radius: 999px; background: var(--panel); font-weight:700;
+  }
+
+  /* Preview card */
+  .preview{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 0;
+    margin: 32px 0;
+    overflow:hidden;
+  }
+  .preview-stage{
+    display:flex; align-items:center; justify-content:center;
+    padding: 64px 24px;
+    background:
+      linear-gradient(var(--panel-2) 1px, transparent 1px),
+      linear-gradient(90deg, var(--panel-2) 1px, transparent 1px);
+    background-size: 24px 24px;
+    position:relative;
+  }
+  .preview-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 16px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; color: var(--text); font-weight:700;
+  }
+
+  /* --- Live demo: GradientText replica (vanilla HTML/CSS) --- */
+  @keyframes gradient-border{
+    0%, 100%{ border-radius: 37% 29% 27% 27% / 28% 25% 41% 37%; }
+    25%{ border-radius: 47% 29% 39% 49% / 61% 19% 66% 26%; }
+    50%{ border-radius: 57% 23% 47% 72% / 63% 17% 66% 33%; }
+    75%{ border-radius: 28% 49% 29% 100% / 93% 20% 64% 25%; }
+  }
+  @keyframes gradient-1{
+    0%, 100%{ top: -50%; right: -50%; }
+    50%{ top: 0%; right: -20%; }
+    75%{ top: -20%; right: 0%; }
+  }
+  @keyframes gradient-2{
+    0%, 100%{ top: -50%; left: -50%; }
+    60%{ top: 20%; left: -20%; }
+    85%{ top: 0%; left: 0%; }
+  }
+  @keyframes gradient-3{
+    0%, 100%{ bottom: -50%; left: -50%; }
+    40%{ bottom: 0%; left: -20%; }
+    65%{ bottom: -20%; left: 0%; }
+  }
+  @keyframes gradient-4{
+    0%, 100%{ bottom: -50%; right: -50%; }
+    50%{ bottom: -20%; right: -5%; }
+    90%{ bottom: 0%; right: -20%; }
+  }
+  .demo-heading{
+    margin:0; text-align:center; font-weight:800; letter-spacing:-0.03em;
+    font-size: clamp(28px, 5vw, 52px); color:#000;
+  }
+  .gradient-text{
+    position: relative;
+    display: inline-flex;
+    overflow: hidden;
+    background: #fff;
+  }
+  .gradient-text .blend{
+    pointer-events:none; position:absolute; inset:0; mix-blend-mode: lighten;
+  }
+  .gradient-text .blob{
+    pointer-events:none; position:absolute;
+    width: 140px; height: 140px;
+    mix-blend-mode: overlay; filter: blur(16px);
+    animation: gradient-border 6s ease-in-out infinite;
+  }
+  .gradient-text .blob.b1{ background:#e6007a; animation-name: gradient-border, gradient-1; animation-duration: 6s, 12s; animation-iteration-count: infinite, infinite; animation-direction: normal, alternate; }
+  .gradient-text .blob.b2{ background:#22e37a; animation-name: gradient-border, gradient-2; animation-duration: 6s, 12s; animation-iteration-count: infinite, infinite; animation-direction: normal, alternate; }
+  .gradient-text .blob.b3{ background:#0047b3; animation-name: gradient-border, gradient-3; animation-duration: 6s, 12s; animation-iteration-count: infinite, infinite; animation-direction: normal, alternate; }
+  .gradient-text .blob.b4{ background:#f2e600; animation-name: gradient-border, gradient-4; animation-duration: 6s, 12s; animation-iteration-count: infinite, infinite; animation-direction: normal, alternate; }
+
+  /* Sections */
+  section{ margin-top: 48px; }
+  .section-title{
+    display:flex; align-items:center; gap:10px; margin-bottom: 16px;
+  }
+  .section-title .num{
+    font-family: var(--mono); font-size: 12px; color: var(--bg); background: var(--accent);
+    width: 22px; height: 22px; border-radius: 6px; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; font-weight:700;
+  }
+  .section-title h2{ font-size: 16px; margin:0; font-weight:700; }
+  section p.desc{ color: #1a1a1a; font-size: 14px; margin: 0 0 14px; line-height:1.6; font-weight:500; }
+
+  /* Code blocks */
+  .code-block{
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow:hidden;
+    margin-bottom: 14px;
+  }
+  .code-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--panel-2);
+  }
+  .code-filename{ font-family: var(--mono); font-size: 12px; color: var(--text); font-weight:700; }
+  .copy-btn{
+    font-family: var(--mono); font-size: 11px; color: var(--text); background:transparent;
+    border: 1px solid var(--line); padding: 4px 10px; border-radius: 6px; cursor:pointer;
+    display:flex; align-items:center; gap:6px; transition: all .15s ease; font-weight:700;
+  }
+  .copy-btn:hover{ color: #fff; background:#000; border-color: #000; }
+  .copy-btn.copied{ color: #fff; background:#000; border-color: #000; }
+  pre{
+    margin:0; padding: 16px; overflow-x:auto; font-family: var(--mono); font-size: 12.5px; line-height:1.65; font-weight:500; color:#000;
+    max-height: 480px; overflow-y:auto;
+  }
+  code{ font-family: var(--mono); }
+  .tok-kw{ color:#7a1fa2; font-weight:700; }
+  .tok-str{ color:#2b7a0b; font-weight:500; }
+  .tok-com{ color:#444444; font-style:italic; font-weight:500; }
+  .tok-tag{ color:#0d47a1; font-weight:700; }
+  .tok-attr{ color:#b36b00; font-weight:600; }
+  .tok-func{ color:#00707a; font-weight:700; }
+  .tok-type{ color:#a0330d; font-weight:600; }
+  .tok-prop{ color:#0d47a1; font-weight:600; }
+
+  /* Steps */
+  .steps{ display:flex; flex-direction:column; gap:10px; }
+  .step{
+    background: var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+  }
+  .step-head{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .step-head .dot{ width:6px; height:6px; border-radius:50%; background: var(--accent); flex-shrink:0; }
+  .step-head strong{ font-size:14px; font-weight:700; }
+  .step p{ margin:0; color:#1a1a1a; font-size:13.5px; line-height:1.55; padding-left:16px; font-weight:500; }
+
+  .checklist{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; }
+  .checklist li{ font-size:13.5px; color: #1a1a1a; font-weight:500; display:flex; gap:10px; align-items:flex-start; }
+  .checklist li::before{ content:'—'; color: var(--accent); flex-shrink:0; font-weight:700; }
+
+  .path-note{
+    font-family: var(--mono); font-size: 12px; background: rgba(0,0,0,.05);
+    border: 1px solid #000; color: #000; padding: 10px 14px; border-radius: 8px; margin-top:10px; font-weight:600;
+  }
+
+  .props-table{ width:100%; border-collapse:collapse; font-size:13px; margin-bottom:14px; }
+  .props-table th, .props-table td{ text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); }
+  .props-table th{ font-family:var(--mono); font-weight:700; color:#000; background:var(--panel-2); }
+  .props-table td{ color:#1a1a1a; font-weight:500; }
+  .props-table td code, .props-table th code{ font-family:var(--mono); background:var(--panel-2); padding:1px 5px; border-radius:4px; font-weight:700; }
+
+  footer{ margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--text); font-size: 12px; font-family: var(--mono); font-weight:700; }
+
+  @media (max-width: 600px){
+    h1{ font-size: 26px; }
+    .wrap{ padding: 32px 16px 60px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .gradient-text .blob{ animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">shadcn/ui · componente salvo</div>
+    <h1>Gradient Text <code>&lt;GradientText /&gt;</code></h1>
+    <p class="sub">Envolve qualquer trecho de texto (ou elemento, via <code>as</code>) em quatro manchas de cor borradas que se deformam e vagueiam por trás dele em loop, recortadas pelo próprio contorno do texto com <code>overflow-hidden</code> + <code>mix-blend-lighten/darken</code>. Sem canvas, sem SVG — só Tailwind, keyframes e Motion.</p>
+    <div class="tags">
+      <span class="tag">React</span>
+      <span class="tag">TypeScript</span>
+      <span class="tag">Tailwind CSS</span>
+      <span class="tag">Motion (framer-motion)</span>
+    </div>
+  </header>
+
+  <!-- LIVE PREVIEW -->
+  <div class="preview">
+    <div class="preview-stage">
+      <h1 class="demo-heading">
+        Design
+        <span class="gradient-text">
+          without
+          <span class="blend">
+            <span class="blob b1"></span>
+            <span class="blob b2"></span>
+            <span class="blob b3"></span>
+            <span class="blob b4"></span>
+          </span>
+        </span>
+        Limits
+      </h1>
+    </div>
+    <div class="preview-bar">
+      <span>preview ao vivo · looping automático</span>
+      <span>gradient-border: 6s · gradient-1..4: 12s alternate</span>
+    </div>
+  </div>
+
+  <!-- CODE: component -->
+  <section>
+    <div class="section-title"><span class="num">1</span><h2>Código do componente</h2></div>
+    <p class="desc">Copie e cole em <strong style="color:#000">/components/ui/gradient-text.tsx</strong>.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">components/ui/gradient-text.tsx</span>
+        <button class="copy-btn" onclick="copyCode('code1', this)">copiar</button>
+      </div>
+      <pre id="code1"><code><span class="tok-str">"use client"</span>
+<span class="tok-kw">import</span> React <span class="tok-kw">from</span> <span class="tok-str">"react"</span>;
+<span class="tok-kw">import</span> { motion, <span class="tok-kw">type</span> MotionProps } <span class="tok-kw">from</span> <span class="tok-str">"motion/react"</span>;
+
+<span class="tok-kw">import</span> { cn } <span class="tok-kw">from</span> <span class="tok-str">"@/lib/utils"</span>;
+
+<span class="tok-kw">interface</span> <span class="tok-type">GradientTextProps</span>
+  <span class="tok-kw">extends</span> Omit&lt;React.HTMLAttributes&lt;<span class="tok-type">HTMLElement</span>&gt;, <span class="tok-kw">keyof</span> <span class="tok-type">MotionProps</span>&gt; {
+  className?: <span class="tok-type">string</span>;
+  children: React.ReactNode;
+  as?: React.ElementType;
+}
+
+<span class="tok-kw">function</span> <span class="tok-func">GradientText</span>({
+  className,
+  children,
+  as: Component = <span class="tok-str">"span"</span>,
+  ...props
+}: <span class="tok-type">GradientTextProps</span>) {
+  <span class="tok-kw">const</span> MotionComponent = motion.create(Component);
+
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;MotionComponent</span>
+      <span class="tok-attr">className</span>={cn(
+        <span class="tok-str">"relative inline-flex overflow-hidden bg-white dark:bg-black"</span>,
+        className,
+      )}
+      {...props}
+    <span class="tok-tag">&gt;</span>
+      {children}
+      <span class="tok-tag">&lt;span</span> <span class="tok-attr">className</span>=<span class="tok-str">"pointer-events-none absolute inset-0 mix-blend-lighten dark:mix-blend-darken"</span><span class="tok-tag">&gt;</span>
+        <span class="tok-tag">&lt;span</span> <span class="tok-attr">className</span>=<span class="tok-str">"pointer-events-none absolute -top-1/2 h-[30vw] w-[30vw] animate-[gradient-border_6s_ease-in-out_infinite,gradient-1_12s_ease-in-out_infinite_alternate] bg-[hsl(var(--color-1))] mix-blend-overlay blur-[1rem]"</span><span class="tok-tag">&gt;&lt;/span&gt;</span>
+        <span class="tok-tag">&lt;span</span> <span class="tok-attr">className</span>=<span class="tok-str">"pointer-events-none absolute right-0 top-0 h-[30vw] w-[30vw] animate-[gradient-border_6s_ease-in-out_infinite,gradient-2_12s_ease-in-out_infinite_alternate] bg-[hsl(var(--color-2))] mix-blend-overlay blur-[1rem]"</span><span class="tok-tag">&gt;&lt;/span&gt;</span>
+        <span class="tok-tag">&lt;span</span> <span class="tok-attr">className</span>=<span class="tok-str">"pointer-events-none absolute bottom-0 left-0 h-[30vw] w-[30vw] animate-[gradient-border_6s_ease-in-out_infinite,gradient-3_12s_ease-in-out_infinite_alternate] bg-[hsl(var(--color-3))] mix-blend-overlay blur-[1rem]"</span><span class="tok-tag">&gt;&lt;/span&gt;</span>
+        <span class="tok-tag">&lt;span</span> <span class="tok-attr">className</span>=<span class="tok-str">"pointer-events-none absolute -bottom-1/2 right-0 h-[30vw] w-[30vw] animate-[gradient-border_6s_ease-in-out_infinite,gradient-4_12s_ease-in-out_infinite_alternate] bg-[hsl(var(--color-4))] mix-blend-overlay blur-[1rem]"</span><span class="tok-tag">&gt;&lt;/span&gt;</span>
+      <span class="tok-tag">&lt;/span&gt;</span>
+    <span class="tok-tag">&lt;/MotionComponent&gt;</span>
+  );
+}
+
+<span class="tok-kw">export</span> { GradientText }</code></pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">exemplo de uso — demo.tsx</span>
+        <button class="copy-btn" onclick="copyCode('code2', this)">copiar</button>
+      </div>
+      <pre id="code2"><code><span class="tok-kw">import</span> { GradientText } <span class="tok-kw">from</span> <span class="tok-str">"@/components/ui/gradient-text"</span>;
+
+<span class="tok-kw">export function</span> <span class="tok-func">GradientTextDemo</span>() {
+  <span class="tok-kw">return</span> (
+    <span class="tok-tag">&lt;h1</span> <span class="tok-attr">className</span>=<span class="tok-str">"text-center text-4xl font-bold tracking-tighter md:text-5xl lg:text-7xl"</span><span class="tok-tag">&gt;</span>
+      Design <span class="tok-tag">&lt;GradientText&gt;</span>without<span class="tok-tag">&lt;/GradientText&gt;</span> Limits
+    <span class="tok-tag">&lt;/h1&gt;</span>
+  );
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section>
+    <div class="section-title"><span class="num">2</span><h2>Pré-requisitos do projeto</h2></div>
+    <p class="desc">Assume um projeto shadcn/ui já configurado com Tailwind CSS e TypeScript. Se ainda não tiver:</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">setup — terminal</span>
+        <button class="copy-btn" onclick="copyCode('code3', this)">copiar</button>
+      </div>
+      <pre id="code3"><code><span class="tok-com"># criar projeto (se ainda não existir)</span>
+npx create-next-app@latest meu-app --typescript --tailwind --eslint
+
+<span class="tok-com"># dentro do projeto: iniciar shadcn/ui</span>
+npx shadcn@latest init
+
+<span class="tok-com"># biblioteca de animação usada pelo componente</span>
+npm install motion
+
+<span class="tok-com"># isso cria automaticamente components.json e a pasta</span>
+<span class="tok-com"># components/ui — que é o local padrão esperado</span></code></pre>
+    </div>
+    <div class="path-note">
+      Se o caminho padrão de componentes do seu projeto não for <strong>/components/ui</strong>, crie essa pasta manualmente: é o local convencionado pelo shadcn/ui para primitivos reutilizáveis, e manter esse padrão evita que o CLI e outros componentes gerados percam a referência de import (<code>@/components/ui/...</code>).
+    </div>
+  </section>
+
+  <!-- TAILWIND CONFIG -->
+  <section>
+    <div class="section-title"><span class="num">3</span><h2>Extensão do tailwind.config.js</h2></div>
+    <p class="desc">Adicione as cores e os keyframes que o componente referencia via <code>animate-[...]</code> e <code>bg-[hsl(var(--color-N))]</code>. Sem isso, as classes de animação não existem e o Tailwind as ignora silenciosamente.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">tailwind.config.js</span>
+        <button class="copy-btn" onclick="copyCode('code4', this)">copiar</button>
+      </div>
+      <pre id="code4"><code><span class="tok-com">/** @type {import('tailwindcss').Config} */</span>
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        <span class="tok-str">"color-1"</span>: <span class="tok-str">"hsl(var(--color-1))"</span>,
+        <span class="tok-str">"color-2"</span>: <span class="tok-str">"hsl(var(--color-2))"</span>,
+        <span class="tok-str">"color-3"</span>: <span class="tok-str">"hsl(var(--color-3))"</span>,
+        <span class="tok-str">"color-4"</span>: <span class="tok-str">"hsl(var(--color-4))"</span>,
+        <span class="tok-str">"color-5"</span>: <span class="tok-str">"hsl(var(--color-5))"</span>,
+      },
+      keyframes: {
+        <span class="tok-str">"gradient-border"</span>: {
+          <span class="tok-str">"0%, 100%"</span>: { borderRadius: <span class="tok-str">"37% 29% 27% 27% / 28% 25% 41% 37%"</span> },
+          <span class="tok-str">"25%"</span>: { borderRadius: <span class="tok-str">"47% 29% 39% 49% / 61% 19% 66% 26%"</span> },
+          <span class="tok-str">"50%"</span>: { borderRadius: <span class="tok-str">"57% 23% 47% 72% / 63% 17% 66% 33%"</span> },
+          <span class="tok-str">"75%"</span>: { borderRadius: <span class="tok-str">"28% 49% 29% 100% / 93% 20% 64% 25%"</span> },
+        },
+        <span class="tok-str">"gradient-1"</span>: {
+          <span class="tok-str">"0%, 100%"</span>: { top: <span class="tok-str">"0"</span>, right: <span class="tok-str">"0"</span> },
+          <span class="tok-str">"50%"</span>: { top: <span class="tok-str">"50%"</span>, right: <span class="tok-str">"25%"</span> },
+          <span class="tok-str">"75%"</span>: { top: <span class="tok-str">"25%"</span>, right: <span class="tok-str">"50%"</span> },
+        },
+        <span class="tok-str">"gradient-2"</span>: {
+          <span class="tok-str">"0%, 100%"</span>: { top: <span class="tok-str">"0"</span>, left: <span class="tok-str">"0"</span> },
+          <span class="tok-str">"60%"</span>: { top: <span class="tok-str">"75%"</span>, left: <span class="tok-str">"25%"</span> },
+          <span class="tok-str">"85%"</span>: { top: <span class="tok-str">"50%"</span>, left: <span class="tok-str">"50%"</span> },
+        },
+        <span class="tok-str">"gradient-3"</span>: {
+          <span class="tok-str">"0%, 100%"</span>: { bottom: <span class="tok-str">"0"</span>, left: <span class="tok-str">"0"</span> },
+          <span class="tok-str">"40%"</span>: { bottom: <span class="tok-str">"50%"</span>, left: <span class="tok-str">"25%"</span> },
+          <span class="tok-str">"65%"</span>: { bottom: <span class="tok-str">"25%"</span>, left: <span class="tok-str">"50%"</span> },
+        },
+        <span class="tok-str">"gradient-4"</span>: {
+          <span class="tok-str">"0%, 100%"</span>: { bottom: <span class="tok-str">"0"</span>, right: <span class="tok-str">"0"</span> },
+          <span class="tok-str">"50%"</span>: { bottom: <span class="tok-str">"25%"</span>, right: <span class="tok-str">"40%"</span> },
+          <span class="tok-str">"90%"</span>: { bottom: <span class="tok-str">"50%"</span>, right: <span class="tok-str">"25%"</span> },
+        },
+      },
+    },
+  },
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- GLOBALS.CSS -->
+  <section>
+    <div class="section-title"><span class="num">4</span><h2>Extensão do globals.css</h2></div>
+    <p class="desc">Declare as 5 variáveis HSL que alimentam as classes <code>color-1</code>…<code>color-5</code>. Troque os valores para casar com a paleta da sua marca — o componente não impõe cor nenhuma por conta própria.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">app/globals.css</span>
+        <button class="copy-btn" onclick="copyCode('code5', this)">copiar</button>
+      </div>
+      <pre id="code5"><code><span class="tok-com">@layer</span> base {
+  :root {
+    --color-1: 330 100% 40%; <span class="tok-com">/* Dark Neon Pink */</span>
+    --color-2: 140 100% 55%; <span class="tok-com">/* Bright Electric Green */</span>
+    --color-3: 210 100% 30%; <span class="tok-com">/* Deep Neon Blue */</span>
+    --color-4: 60 100% 70%;  <span class="tok-com">/* Light Neon Yellow */</span>
+    --color-5: 295 100% 45%; <span class="tok-com">/* Dark Neon Purple */</span>
+    --brand: 50 100% 50%;    <span class="tok-com">/* Bright, punchy yellow */</span>
+  }
+
+  .dark {
+    --color-1: 330 100% 40%;
+    --color-2: 140 100% 55%;
+    --color-3: 210 100% 30%;
+    --color-4: 60 100% 70%;
+    --color-5: 295 100% 45%;
+    --brand: 50 100% 50%;
+  }
+}</code></pre>
+    </div>
+  </section>
+
+  <!-- PROPS -->
+  <section>
+    <div class="section-title"><span class="num">5</span><h2>Props</h2></div>
+    <table class="props-table">
+      <tr><th>Prop</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+      <tr><td><code>children</code></td><td>ReactNode</td><td>—</td><td>Conteúdo (geralmente texto) recortado pelas manchas de cor</td></tr>
+      <tr><td><code>as</code></td><td>React.ElementType</td><td>"span"</td><td>Elemento/tag renderizada — troque para "h1", "a", etc.</td></tr>
+      <tr><td><code>className</code></td><td>string</td><td>—</td><td>Classes extras mescladas via <code>cn</code> (ex.: tamanho de fonte, peso)</td></tr>
+      <tr><td>...props</td><td>MotionProps &amp; HTMLAttributes</td><td>—</td><td>Qualquer prop de animação do Motion ou atributo HTML é repassado ao elemento raiz</td></tr>
+    </table>
+  </section>
+
+  <!-- INTEGRATION STEPS -->
+  <section>
+    <div class="section-title"><span class="num">6</span><h2>Passos de integração</h2></div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>Colar o arquivo</strong></div>
+        <p>Salve o código em <code>components/ui/gradient-text.tsx</code>. Ele depende de <code>cn</code> vindo de <code>@/lib/utils</code> — confirme que esse helper já existe no projeto (o CLI do shadcn o cria por padrão).</p>
+      </div>
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>Dependência externa</strong></div>
+        <p>Instale <code>motion</code> (sucessor do <code>framer-motion</code>). O componente usa <code>motion.create(Component)</code> para tornar qualquer tag animável mantendo o tipo genérico via <code>as</code>.</p>
+      </div>
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>Tailwind + CSS globais</strong></div>
+        <p>Sem estender o <code>tailwind.config.js</code> (seção 3) e o <code>globals.css</code> (seção 4), as classes <code>animate-[gradient-border_...]</code> e <code>bg-[hsl(var(--color-N))]</code> não resolvem para nada — o texto renderiza sem nenhuma mancha de cor.</p>
+      </div>
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>"use client"</strong></div>
+        <p>Usa <code>motion</code>, que roda no cliente. Mantenha a diretiva <code>"use client"</code> no topo do arquivo se o projeto usa Next.js App Router.</p>
+      </div>
+      <div class="step">
+        <div class="step-head"><span class="dot"></span><strong>Onde usar</strong></div>
+        <p>Feito para destacar uma palavra ou frase curta dentro de um título grande (hero, seção de features, CTA) — evite aplicar em blocos de parágrafo, o efeito perde legibilidade em texto pequeno.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTES -->
+  <section>
+    <div class="section-title"><span class="num">7</span><h2>Notas técnicas</h2></div>
+    <ul class="checklist">
+      <li>O recorte da mancha de cor no formato exato das letras vem do <code>overflow-hidden</code> no elemento raiz — as 4 manchas são maiores que o texto (<code>30vw</code>) e ficam cortadas pela caixa do próprio elemento.</li>
+      <li><code>mix-blend-lighten</code> (claro) / <code>mix-blend-darken</code> (escuro) no wrapper interno decide como a cor se funde com o fundo (<code>bg-white</code>/<code>bg-black</code>) atrás do texto; <code>mix-blend-overlay</code> em cada mancha decide como elas se misturam entre si.</li>
+      <li>Cada mancha anima duas propriedades em paralelo: <code>gradient-border</code> (deforma o <code>border-radius</code> a cada 6s) e <code>gradient-N</code> (desloca a posição a cada 12s, alternando). O resultado nunca se repete de forma óbvia.</li>
+      <li>Como <code>as</code> aceita qualquer <code>ElementType</code>, dá pra usar em <code>&lt;a&gt;</code>, <code>&lt;h2&gt;</code>, <code>&lt;button&gt;</code> etc. sem perder a tipagem de atributos daquele elemento.</li>
+      <li>Sem imagens externas nem SVG — só <code>blur-[1rem]</code>, gradiente HSL via variáveis CSS e os keyframes do Tailwind.</li>
+    </ul>
+  </section>
+
+  <!-- ORIGINAL PROMPT -->
+  <section>
+    <div class="section-title"><span class="num">8</span><h2>Prompt original de integração</h2></div>
+    <p class="desc">Prompt usado para gerar as instruções de integração deste componente — guarde para reaproveitar com outros componentes shadcn.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-filename">prompt.txt</span>
+        <button class="copy-btn" onclick="copyCode('code6', this)">copiar</button>
+      </div>
+      <pre id="code6"><code>You are given a task to integrate an existing React component in the codebase
+
+The codebase should support:
+- shadcn project structure
+- Tailwind CSS
+- Typescript
+
+If it doesn't, provide instructions on how to setup project via shadcn CLI, install Tailwind or Typescript.
+
+Determine the default path for components and styles.
+If default path for components is not /components/ui, provide instructions on why it's important to create this folder
+Copy-paste this component to /components/ui folder:
+[gradient-text.tsx + demo.tsx — ver bloco de código da seção 1]
+
+Install NPM dependencies:
+motion
+
+Extend existing tailwind.config.js with this code:
+[ver bloco de código da seção 3]
+
+Extend existing globals.css with this code:
+[ver bloco de código da seção 4]
+
+Implementation Guidelines
+ 1. Analyze the component structure and identify all required dependencies
+ 2. Review the component's arguments and state
+ 3. Identify any required context providers or hooks and install them
+ 4. Questions to Ask
+ - What data/props will be passed to this component?
+ - Are there any specific state management requirements?
+ - Are there any required assets (images, icons, etc.)?
+ - What is the expected responsive behavior?
+ - What is the best place to use this component in the app?
+
+Steps to integrate
+ 0. Copy paste all the code above in the correct directories
+ 1. Install external dependencies
+ 2. Fill image assets with Unsplash stock images you know exist
+ 3. Use lucide-react icons for svgs or logos if component requires them</code></pre>
+    </div>
+  </section>
+
+  <footer>
+    salvo em gradient-text-component.html · shadcn/ui component reference
+  </footer>
+
+</div>
+
+<script>
+  function copyCode(id, btn){
+    const el = document.getElementById(id);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.textContent = 'copiado ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = original; btn.classList.remove('copied'); }, 1600);
+    });
+  }
+</script>
+
+</body>
+</html>
